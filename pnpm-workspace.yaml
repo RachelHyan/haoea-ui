@@ -1,0 +1,4 @@
+# 关联
+packages:
+  - 'packages/**' # 存放开发的包
+  - 'examples'    # 调试组件

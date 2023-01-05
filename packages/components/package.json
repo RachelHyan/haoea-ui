@@ -1,0 +1,23 @@
+{
+  "name": "haoea-ui",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "build": "vite build"
+  },
+  "files": [
+    "es",
+    "lib"
+  ], 
+  "keywords": [
+    "haoea-ui",
+    "vue3组件库"
+  ],
+  "author": "十六",
+  "license": "MIT",
+  "typings": "lib/index.d.ts",
+  "dependencies": {
+    "@haoea-ui/utils": "workspace:^1.0.0"
+  }
+}
