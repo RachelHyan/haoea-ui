@@ -9,11 +9,11 @@
     "esModuleInterop": true, // esModuleInterop 表示是否启用 ES 模块的交互模式
     "moduleResolution": "Node", // moduleResolution 表示模块解析策略
     "lib": ["esnext", "dom"], // lib 表示编译时需要引入的库文件, 这里设置为 esnext 和 dom，表示引入最新的 ES 特性和 dom 的类型声明
-    // "rootDirs": ["./","./packages/components"], // rootDirs 表示根目录，这里设置为当前目录和 packages/components 目录
-    // "paths": { // paths 表示路径映射
-    //   "@/*":[
-    //     "packages/components/src/*"
-    //   ]
-    // } 
+    "rootDirs": ["./","./packages/components"], // rootDirs 表示根目录，这里设置为当前目录和 packages/components 目录
+    "paths": { // paths 表示路径映射
+      "@/*":[
+        "packages/components/src/*"
+      ]
+    } 
   }
 }

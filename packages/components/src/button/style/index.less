@@ -1,0 +1,329 @@
+@import url(../../../common/index.less);
+@primary:#409eff;
+@success:#67c23a;
+@warning:#e6a23c;
+@danger:#f56c6c;
+@button-space:14px;
+@button-radius:4px;
+
+.@{prefix}-button {
+    cursor: pointer;
+    white-space: nowrap;
+    background: transparent;
+    border: 1px solid #dcdfe6;
+    color: #606266;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0px 20px;
+    border-radius: @button-radius;
+    height: 40px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    // outline: none;
+
+
+    &[disabled] {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    &:hover {
+        &:not([disabled]) {
+            color: #409eff;
+            border-color: #409eff;
+            background-color: rgba(64, 158, 255, 0.1);
+        }
+    }
+
+
+    &-text {
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    + .@{prefix}-button {
+        margin-left: @button-space;
+    }
+
+    .@{prefix}-button-icon--left {
+        margin-right: 10px;
+    }
+
+    .@{prefix}-button-icon--right {
+        margin-left: 10px;
+    }
+    
+}
+
+.@{prefix}-button--primary {
+    color: #fff;
+    background-color: @primary;
+    border-color: @primary;
+
+    &.is-link {
+        color: @primary;
+
+        &:hover {
+            &:not([disabled]) {
+                color: #66b1ff;
+                background-color: transparent;
+                border-color: transparent;
+            }
+        }
+    }
+
+
+    &.is-border {
+        color: @primary;
+        background-color: #fff;
+        border-color: @primary;
+
+        &:hover {
+            &:not([disabled]) {
+                color: @primary;
+                border-color: @primary;
+                background-color: rgba(64, 158, 255, 0.1);
+            }
+        }
+    }
+
+    &:hover {
+        &:not([disabled]) {
+            color: #fff;
+            background-color: #66b1ff;
+            border-color: #66b1ff;
+        }
+    }
+}
+
+.@{prefix}-button--success {
+    color: #fff;
+    background-color: @success;
+    border-color: @success;
+
+    &.is-link {
+        color: @success;
+
+        &:hover {
+            &:not([disabled]) {
+                color: #a0d911;
+                background-color: transparent;
+                border-color: transparent;
+            }
+        }
+    }
+
+    &.is-border {
+        color: @success;
+        background-color: #fff;
+        border-color: @success;
+
+        &:hover {
+            &:not([disabled]) {
+                color: @success;
+                border-color: @success;
+                background-color: rgba(103, 194, 58, 0.1);
+            }
+        }
+    }
+
+    &:hover {
+        &:not([disabled]) {
+            color: #fff;
+            background-color: #85ce61;
+            border-color: #85ce61;
+        }
+    }
+}
+
+.@{prefix}-button--warning {
+    color: #fff;
+    background-color: @warning;
+    border-color: @warning;
+
+    &.is-link {
+        color: @warning;
+
+        &:hover {
+            &:not([disabled]) {
+                color: #eab563;
+                background-color: transparent;
+                border-color: transparent;
+            }
+        }
+    }
+
+    &.is-border {
+        color: @warning;
+        background-color: #fff;
+        border-color: @warning;
+
+        &:hover {
+            &:not([disabled]) {
+                color: @warning;
+                border-color: @warning;
+                background-color: rgba(230, 162, 60, 0.1);
+            }
+        }
+    }
+
+    &:hover {
+        &:not([disabled]) {
+            color: #fff;
+            background-color: #eab563;
+            border-color: #eab563;
+        }
+    }
+}
+
+.@{prefix}-button--danger {
+    color: #fff;
+    background-color: @danger;
+    border-color: @danger;
+
+    &.is-link {
+        color: @danger;
+
+        &:hover {
+            &:not([disabled]) {
+                color: #ff7875;
+                background-color: transparent;
+                border-color: transparent;
+            }
+        }
+    }
+
+    &.is-border {
+        color: @danger;
+        background-color: #fff;
+        border-color: @danger;
+
+        &:hover {
+            &:not([disabled]) {
+                color: @danger;
+                border-color: @danger;
+                background-color: rgba(245, 108, 108, 0.1);
+            }
+        }
+    }
+
+    &:hover {
+        &:not([disabled]) {
+            color: #fff;
+            background-color: #ff7875;
+            border-color: #ff7875;
+        }
+    }
+}
+
+.@{prefix}-button--medium {
+   &:not(.is-circle) {
+    height: 32px;
+    padding: 0 15px;
+   }
+   &.is-circle {
+    height: 32px;
+    width: 32px;
+    padding: 0;
+   }
+}
+
+.@{prefix}-button--small {
+    &:not(.is-circle) {
+        height: 28px;
+        padding: 0 10px;
+        font-size: 12px;
+
+        .@{prefix}-button-icon--left {
+            margin-right: 5px;
+        }
+
+        .@{prefix}-button-icon--right {
+            margin-left: 5px;
+        }
+    }
+    &.is-circle {
+        height: 28px;
+        width: 28px;
+        padding: 0;
+    }
+}
+
+.@{prefix}-button--mini {
+    &:not(.is-circle) {
+        height: 22px;
+        padding: 0 5px;
+        font-size: 12px;
+
+        .@{prefix}-button-icon--left {
+            margin-right: 5px;
+        }
+
+        .@{prefix}-button-icon--right {
+            margin-left: 5px;
+        }
+    }
+    &.is-circle {
+        height: 22px;
+        width: 22px;
+        padding: 0;
+    }
+}
+
+.is-loading {
+    animation: loading 2s linear infinite;
+}
+
+.is-round {
+    border-radius: 100px;
+}
+
+.is-circle {
+    border-radius: 50%;
+    height: 40px;
+    width: 40px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.is-link {
+    color: #606266;
+    background-color: transparent;
+    border: transparent;
+
+    &:hover {
+        &:not([disabled]) {
+            color: #7d7b7b;
+            background-color: transparent;
+            border-color: transparent;
+        }
+    }
+}
+
+.is-border {
+    color: #606266;
+    background-color: #fff;
+    border-color: #606266;
+
+    &:hover {
+        &:not([disabled]) {
+            color: #606266;
+            border-color: #606266;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+    }
+}
+
+@keyframes loading {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(1turn);
+    }
+}
+

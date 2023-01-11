@@ -6,9 +6,9 @@ import {createApp} from 'vue';
 import App from './app.vue';
 const app = createApp(App);
 
-// import Haoeaui from 'haoea-ui';
+import Haoeaui from 'haoea-ui';
 // import {Button} from 'haoea-ui';
-// app.use(Haoeaui);
+app.use(Haoeaui);
 // app.use(Button);
 
 app.mount('#app');
