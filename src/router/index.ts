@@ -6,8 +6,9 @@ import {
 } from "vue-router";
 import NProgress from "../utils/progress";
 /** 不参与菜单的路由 */
-import remianingRouter from "./modules/remianing";
-
+import remainingRouter from "./modules/remaining";
+import { isUrl, ascending } from "./utils";
+import { t } from "@/plugins/i18n";
 /**
  * 自动导入全部静态路由，无需再手动导入
  * 匹配 src/router/modules 目录（任何嵌套级别）中具有 .ts 扩展名的所有文件，除了 remaining.ts 文件
@@ -32,12 +33,34 @@ Object.keys(modules).forEach((key) => {
 /** 创建路由实例 */
 const router: Router = createRouter({
 	history: createWebHistory(),
-	routes: routes.concat(...(remianingRouter as any)),
+	routes: ascending(routes).concat(...(remainingRouter as any)),
 });
 
-router.beforeEach((_, __, next) => {
+/** 路由白名单 */
+const whiteList = ["/login"];
+
+router.beforeEach((to, __, next) => {
 	NProgress.start();
-	next();
+
+	// 设置文档标题
+	const externalLink = isUrl(to?.name as string);
+	if (!externalLink) {
+		to.matched.some((item) => {
+			if (!item.meta.title) return "";
+			document.title = `${t(item.meta.title)} | Haoea UI`;
+		});
+	}
+
+	// 路由跳转
+	if (to.path !== "/login") {
+		if (whiteList.indexOf(to.path) !== -1) {
+			next();
+		} else {
+			next({ path: "/login" });
+		}
+	} else {
+		next();
+	}
 });
 
 router.afterEach(() => {

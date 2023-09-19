@@ -5,9 +5,7 @@ import { routeMetaType } from "../types";
 export function useNav() {
 	/** 动态 title */
 	const changeTitle = (meta: routeMetaType) => {
-		console.log(meta);
-
-		document.title = `${t(meta.title)}`;
+		document.title = `${t(meta.title)} | Haoea UI`;
 	};
 
 	return {

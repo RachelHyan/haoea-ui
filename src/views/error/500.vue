@@ -1,15 +1,15 @@
 <template>
-  <div>ServerError</div>
+	<div>ServerError</div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
 
 export default defineComponent({
-  name: "ServerError",
-  setup() {
-    return {};
-  },
+	name: "ServerError",
+	setup() {
+		return {};
+	},
 });
 </script>
 
