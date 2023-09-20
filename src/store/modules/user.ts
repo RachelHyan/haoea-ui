@@ -17,6 +17,10 @@ export const useUserStore = defineStore(
 			// 保存需要二次处理的数据
 		},
 		actions: {
+			/** 存储前端生成的验证码 */
+			SET_VERIFYCODE(verifyCode: string) {
+				this.verifyCode = verifyCode;
+			},
 			// 封装方法，和更新 state 数据
 			/** 登录 */
 			async loginByUsername(data) {

@@ -104,7 +104,7 @@ import { useDataThemeChange } from "@/layout/hooks/useThemeChange";
 import { useTranslationLang } from "@/layout/hooks/useTranslationLang";
 import { t } from "@/plugins/i18n";
 import { useUserStoreHook } from "@/store/modules/user";
-import { defineComponent, reactive, ref } from "vue";
+import { defineComponent, reactive, ref, watch } from "vue";
 import dayIcon from "@/assets/svg/day.svg?component";
 import darkIcon from "@/assets/svg/dark.svg?component";
 import globalization from "@/assets/svg/globalization.svg?component";
@@ -142,6 +142,10 @@ export default defineComponent({
 			});
 			console.log(res);
 		};
+
+		watch(imgCode, (value) => {
+			useUserStoreHook().SET_VERIFYCODE(value);
+		});
 
 		return {
 			imgCode,
