@@ -42,7 +42,7 @@ const whiteList = ["/login"];
 router.beforeEach((to, __, next) => {
 	NProgress.start();
 
-	// 设置文档标题
+	// 动态设置文档标题
 	const externalLink = isUrl(to?.name as string);
 	if (!externalLink) {
 		to.matched.some((item) => {

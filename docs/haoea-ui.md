@@ -135,15 +135,479 @@ pnpm install -D @iconify/vue
 ## 定义语音包
 
 ```ts
--/src/acellos / zh - CN.yaml;
-login: username: 账号;
-password: 密码;
-login: 登录;
-buttons: login: 登录;
-loginOut: 退出系统 - /src/acellos / en.yaml;
-login: username: username;
-password: password;
-login: login;
-buttons: login: login;
-loginOut: loginOut;
+- src/locales/zh-CN.js
+export default {
+	登录: "登录",
+	账号: "账号",
+};
+
+
+- src/locale/en.js
+export default {
+	登录: "Login",
+	账号: "Username",
+};
 ```
+
+## 创建实例
+
+```ts
+- src/plugins/i18n.ts
+// element-plus国际化
+import { createI18n, type I18n } from "vue-i18n";
+import en from "../../locales/en.js";
+import zh from "../../locales/zh-CN.js";
+
+const messages = {
+	zh,
+	en,
+};
+
+const i18n: I18n = createI18n({
+	legacy: false,	// 使用 Composition API 模式，则要设为 false
+	globalInjection: true, // 全局生效$t
+	locale: sessionStorage.getItem("locale") ?? "zh",
+	messages,
+});
+
+/** 翻译 */
+export const t = (message) => {
+	if (!message) return;
+	// @ts-ignore
+	return i18n.global.t(message);
+};
+
+export default i18n;
+
+```
+
+## 注册
+
+```ts
+- main.ts
+import i18n from "@/plugins/i18n";
+
+app.use(i18n);
+```
+
+## 使用
+
+```ts
+- 页面切换
+<template>
+	<div>
+		<el-button @click="translationCh">中文</el-button>
+		<el-button @click="translationEn">English</el-button>
+		{{ $t("登录") }}
+	</div>
+</template>
+
+<script lang="ts">
+import { useTranslationLang } from "@/layout/hooks/useTranslationLang";
+import { defineComponent } from "vue";
+
+export default defineComponent({
+	name: "Login",
+	setup() {
+		const { translationCh, translationEn } = useTranslationLang();
+
+		return {
+			translationCh,
+			translationEn,
+		};
+	},
+});
+</script>
+
+
+- useTranslationLang()   src/layout/hooks/useTranslationLang.ts
+import { onBeforeMount, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
+import { useNav } from "./useNav";
+
+/** 国际化 */
+export function useTranslationLang() {
+	const { changeTitle } = useNav();
+	const { locale, t } = useI18n();
+	const route = useRoute();
+
+	const translationCh = () => {
+		sessionStorage.setItem("locale", "zh");
+		locale.value = "zh";
+	};
+
+	const translationEn = () => {
+		sessionStorage.setItem("locale", "en");
+		locale.value = "en";
+	};
+
+    /** 文档标题切换 */
+	watch(
+		() => locale.value,
+		() => {
+			changeTitle(route.meta);
+		},
+	);
+
+	onBeforeMount(() => {
+		locale.value = sessionStorage.getItem("locale") ?? "zh";
+	});
+
+	return {
+		t,
+		route,
+		locale,
+		translationCh,
+		translationEn,
+	};
+}
+
+
+- changeTitle()		src/layout/hooks/useNav.ts
+/** 路由 菜单 */
+import { t } from "@/plugins/i18n";
+import { routeMetaType } from "../types";
+
+export function useNav() {
+	/** 动态 title */
+	const changeTitle = (meta: routeMetaType) => {
+		document.title = `${t(meta.title)} | Haoea UI`;
+	};
+
+	return {
+		changeTitle,
+	};
+}
+
+```
+
+### 模板
+
+```vue
+{{ $t("登录") }}
+```
+
+### JS
+
+```js
+import { getCurrentInstance } from "vue"
+const { proxy } = getCurrentInstance()
+procy.$t('hello')
+
+
+import i18n from '@plugins/i18n'
+i18n.global.t('hello')
+
+
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+t('hello')
+```
+
+# 路由
+
+# 工具库
+## svg 组件化使用 - vite-svg-loader
+### 安装依赖
+```js
+pnpm install vite-svg-loader -D
+```
+### 配置
+```js
+- vite.config.ts
+import svgLoader from "vite-svg-loader";
+plugins: [
+	// svg 组件化支持
+	svgLoader(),
+]
+
+
+- tsconfig.json
+"compilerOptions": {
+	"types": ["vite-svg-loader"],
+}
+```
+### 使用
+```ts
+- 在路径后添加 ?component
+import dayIcon from "@/assets/svg/day.svg?component";
+
+
+- 可直接加样式进行修改
+<dayIcon class='x'>
+```
+## 动画库 - @vueuse/motion
+### 封装
+```ts
+import { h, defineComponent, withDirectives, resolveDirective } from "vue";
+
+/** 封装@vueuse/motion动画库中的自定义指令v-motion */
+export default defineComponent({
+	name: "Motion", // 定义名为 Motion 的组件
+	props: {
+		delay: {
+			type: Number,
+			default: 50,
+		},
+	},
+	render() {
+		const { delay } = this;
+		// resolveDirective - 解析指令
+		const motion = resolveDirective("motion");
+		return withDirectives(
+			h(
+				"div",
+				{},
+				{
+					default: () => (this.$slots.default ? [this.$slots.default()] : []),
+				},
+			),
+			[
+				[
+					motion,
+					{
+						// 初始状态
+						initial: { opacity: 0, y: 100 },
+						// 进入状态
+						enter: {
+							opacity: 1,
+							y: 0,
+							transition: {
+								delay,
+							},
+						},
+					},
+				],
+			],
+		);
+	},
+});
+```
+### 使用
+```vue
+import Motion from "./utils/motion";
+
+components: {
+	Motion
+}
+
+<Motion :delay='50'>
+	<div></div>
+</Motion>
+```
+## 图标库 - @iconify/vue
+https://iconify.design/
+### 安装依赖
+```js
+pnpm install @iconify/vue -D
+```
+### 使用
+```js
+import { Icon } from "@iconify/vue";
+
+components: {
+	Icon
+}
+
+<Icon	icon="xxx"/>
+
+```
+## 打字机效果 - typeit
+### 安装依赖
+```js
+pnpm install typeit
+```
+### 封装
+```ts
+import { h, defineComponent } from "vue";
+import TypeIt from "typeit";
+
+// 打字机效果组件（只是简单的封装下，更多配置项参考 https://www.typeitjs.com/docs/vanilla/usage#options）
+export default defineComponent({
+	name: "TypeIt",
+	props: {
+		/** 打字速度，以每一步之间的毫秒数为单位，默认`200` */
+		speed: {
+			type: Number,
+			default: 200,
+		},
+		values: {
+			type: String,
+			defalut: '',
+		},
+		className: {
+			type: String,
+			default: "type-it",
+		},
+		cursor: {
+			type: Boolean,
+			default: true,
+		},
+	},
+	render() {
+		return h(
+			"span",
+			{
+				class: this.className,
+			},
+			{
+				default: () => [],
+			},
+		);
+	},
+	mounted() {
+		new TypeIt(`.${this.className}`, {
+			strings: this.values,
+			speed: this.speed,
+			cursor: this.cursor,
+		}).go();
+	},
+});
+```
+### 使用
+```vue
+import TypeIt from "@/components/print/print";
+
+components: {
+	TypeIt,
+}
+
+<TypeIt values="HAOEAUI" :cursor="false" :speed="150" />
+```
+
+## 数字验证码
+
+```ts
+src/components/ImageVerify/hooks.ts
+import { ref, onMounted } from "vue";
+
+/**
+ * 绘制图形验证码
+ * @param width - 图形宽度
+ * @param height - 图形高度
+ */
+export const useImageVerify = (width = 120, height = 40) => {
+	const domRef = ref<HTMLCanvasElement>();
+	const imgCode = ref("");
+
+	function setImgCode(code: string) {
+		imgCode.value = code;
+	}
+
+	function getImgCode() {
+		if (!domRef.value) return;
+		imgCode.value = draw(domRef.value, width, height);
+	}
+
+	onMounted(() => {
+		getImgCode();
+	});
+
+	return {
+		domRef,
+		imgCode,
+		setImgCode,
+		getImgCode,
+	};
+};
+
+function randomNum(min: number, max: number) {
+	const num = Math.floor(Math.random() * (max - min) + min);
+	return num;
+}
+
+function randomColor(min: number, max: number) {
+	const r = randomNum(min, max);
+	const g = randomNum(min, max);
+	const b = randomNum(min, max);
+	return `rgb(${r},${g},${b})`;
+}
+
+function draw(dom: HTMLCanvasElement, width: number, height: number) {
+	let imgCode = "";
+
+	const NUMBER_STRING = "0123456789";
+
+	const ctx = dom.getContext("2d");
+	if (!ctx) return imgCode;
+
+	ctx.fillStyle = randomColor(180, 230);
+	ctx.fillRect(0, 0, width, height);
+	for (let i = 0; i < 4; i += 1) {
+		const text = NUMBER_STRING[randomNum(0, NUMBER_STRING.length)];
+		imgCode += text;
+		const fontSize = randomNum(18, 41);
+		const deg = randomNum(-30, 30);
+		ctx.font = `${fontSize}px Simhei`;
+		ctx.textBaseline = "top";
+		ctx.fillStyle = randomColor(80, 150);
+		ctx.save();
+		ctx.translate(30 * i + 15, 15);
+		ctx.rotate((deg * Math.PI) / 180);
+		ctx.fillText(text, -15 + 5, -15);
+		ctx.restore();
+	}
+	for (let i = 0; i < 5; i += 1) {
+		ctx.beginPath();
+		ctx.moveTo(randomNum(0, width), randomNum(0, height));
+		ctx.lineTo(randomNum(0, width), randomNum(0, height));
+		ctx.strokeStyle = randomColor(180, 230);
+		ctx.closePath();
+		ctx.stroke();
+	}
+	for (let i = 0; i < 41; i += 1) {
+		ctx.beginPath();
+		ctx.arc(randomNum(0, width), randomNum(0, height), 1, 0, 2 * Math.PI);
+		ctx.closePath();
+		ctx.fillStyle = randomColor(150, 200);
+		ctx.fill();
+	}
+	return imgCode;
+}
+
+/src/components/ImageVerify/index.vue
+<template>
+	<canvas ref="domRef" width="120" height="40" @click="getImgCode" />
+</template>
+
+<script lang="ts">
+import { defineComponent, watch } from "vue";
+import { useImageVerify } from "./hooks";
+
+export default defineComponent({
+	name: "ImageVerify",
+	props: {
+		code: String,
+	},
+	emits: ["update:code"],
+	setup(props, { emit }) {
+		const { domRef, imgCode, setImgCode, getImgCode } = useImageVerify();
+
+		watch(
+			() => props.code,
+			(val) => {
+				setImgCode(val as string);
+			},
+		);
+
+		watch(imgCode, (val) => {
+			emit("update:code", val);
+		});
+
+		return {
+			domRef,
+			getImgCode,
+		};
+	},
+});
+</script>
+
+<style scoped></style>
+
+
+使用
+const imgCode = ref("");
+<ImageVerify v-model:code="imgCode" />
+```
+

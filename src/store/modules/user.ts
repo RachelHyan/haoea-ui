@@ -10,6 +10,8 @@ export const useUserStore = defineStore(
 		state: (): UserState => ({
 			username: "admin",
 			roles: [],
+			// 前端生成的验证码（按实际需求替换）
+			verifyCode: "",
 		}),
 		getters: {
 			// 保存需要二次处理的数据

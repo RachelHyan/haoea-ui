@@ -1,8 +1,10 @@
 /* globals.less - 全局 */
 @import "./reset";
 @import "./dark";
+@import './common.scss';
 
 /* components.less - 组件 */
+@import './element-plus.scss';
 
 /* sections.less - 区块 */
 

@@ -8,6 +8,7 @@ import type { ConfigEnv, UserConfig } from "vite";
 import { defineConfig, loadEnv } from "vite";
 import { viteMockServe } from "vite-plugin-mock";
 import removeConsole from "vite-plugin-remove-console";
+import svgLoader from "vite-svg-loader";
 
 export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
 	/** 当前执行node命令时文件夹的地址（工作目录） */
@@ -41,6 +42,8 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
 				mockPath: "mock", // 数据模拟需要拦截的请求起始 URL
 				enable: process.env.NODE_ENV === "development",
 			}),
+			// svg 组件化支持
+			svgLoader(),
 		],
 		/** 运行后本地预览的服务器 */
 		server: {
