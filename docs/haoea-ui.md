@@ -305,8 +305,6 @@ const { t } = useI18n();
 t('hello')
 ```
 
-# 路由
-
 # 工具库
 ## svg 组件化使用 - vite-svg-loader
 ### 安装依赖
@@ -338,7 +336,23 @@ import dayIcon from "@/assets/svg/day.svg?component";
 <dayIcon class='x'>
 ```
 ## 动画库 - @vueuse/motion
+
+### 安装依赖
+
+```js
+pnpm install @vueuse/motion
+```
+
+### 注册
+
+```js
+- main.ts
+import { MotionPlugin } from "@vueuse/motion";
+app.use(MotionPlugin);
+```
+
 ### 封装
+
 ```ts
 import { h, defineComponent, withDirectives, resolveDirective } from "vue";
 
@@ -360,7 +374,7 @@ export default defineComponent({
 				"div",
 				{},
 				{
-					default: () => (this.$slots.default ? [this.$slots.default()] : []),
+					default: () => [this.$slots.default()],
 				},
 			),
 			[
@@ -610,4 +624,316 @@ export default defineComponent({
 const imgCode = ref("");
 <ImageVerify v-model:code="imgCode" />
 ```
+
+# Token
+
+## 安装依赖
+
+```ts
+pnpm install js-cookie
+pnpm install @types/js-cookie -D
+```
+
+## 使用
+
+- 设置 - utils/auth.ts
+
+```ts
+import { useUserStoreHook } from "@/store/modules/user";
+import Cookies from "js-cookie";
+
+export interface DataInfo<T> {
+	/** token */
+	accessToken: string;
+	/** `accessToken`的过期时间（时间戳） */
+	expires: T;
+	/** 用于调用刷新accessToken的接口时所需的token */
+	refreshToken: string;
+	/** 用户名 */
+	username?: string;
+	/** 当前登陆用户的角色 */
+	roles?: Array<string>;
+}
+
+export const sessionKey = "user-info";
+export const TokenKey = "authorized-token";
+
+/** 获取 Token */
+export const getToken = (): DataInfo<number> => {
+	return Cookies.get(TokenKey)
+		? JSON.parse(Cookies.get(TokenKey) as string) // 解析令牌信息
+		: sessionStorage.getItem(sessionKey); // 返回令牌信息
+};
+
+/**
+ * @description 设置`token`以及一些必要信息并采用无感刷新`token`方案
+ * 无感刷新：后端返回`accessToken`（访问接口使用的`token`）、`refreshToken`（用于调用刷新`accessToken`的接口时所需的`token`，`refreshToken`的过期时间（比如30天）应大于`accessToken`的过期时间（比如2小时））、`expires`（`accessToken`的过期时间）
+ * 将`accessToken`、`expires`这两条信息放在key值为authorized-token的cookie里（过期自动销毁）
+ * 将`username`、`roles`、`refreshToken`、`expires`这四条信息放在key值为`user-info`的sessionStorage里（浏览器关闭自动销毁）
+ */
+export const setToken = (data: DataInfo<Date>) => {
+	let expires = 0;
+	const { accessToken, refreshToken } = data;
+	expires = new Date(data.expires).getTime(); // 如果后端直接设置时间戳，将此处代码改为expires = data.expires，然后把上面的DataInfo<Date>改成DataInfo<number>即可
+	const cookieString = JSON.stringify({ accessToken, expires });
+
+	expires > 0
+		? Cookies.set(TokenKey, cookieString, {
+				expires: (expires - Date.now()) / 86400000,
+		  })
+		: Cookies.set(TokenKey, cookieString);
+
+	const setSessionKey = (username: string, roles: Array<string>) => {
+		useUserStoreHook().SET_USERNAME(username);
+		useUserStoreHook().SET_ROLES(roles);
+
+		const sessionData = {
+			refreshToken,
+			expires,
+			username,
+			roles,
+		};
+
+		sessionStorage.setItem(sessionKey, JSON.stringify(sessionData));
+	};
+
+	if (data.username && data.roles) {
+		const { username, roles } = data;
+		setSessionKey(username, roles);
+	} else {
+		const sessionDataString = sessionStorage.getItem(sessionKey);
+		const sessionData = sessionDataString
+			? JSON.parse(sessionDataString)
+			: null;
+		const { username = "", roles = [] } = sessionData ?? {};
+		setSessionKey(username, roles);
+	}
+};
+
+/** 删除`token`以及key值为`user-info`的session信息 */
+export const removeToken = () => {
+	Cookies.remove(TokenKey);
+	sessionStorage.clear();
+};
+
+/** 格式化token（jwt格式） */
+export const formatToken = (token: string): string => {
+	return "Bearer " + token;
+};
+```
+
+- http 完善获取 token - utiles/http/index.ts
+
+```js
+import type { AxiosInstance, AxiosRequestConfig } from "axios";
+import Axios from "axios";
+import NProgress from "../progress";
+import type {
+	HttpError,
+	HttpRequestConfig,
+	HttpResponse,
+	RequestMethods,
+} from "./types.d";
+import { getToken, formatToken } from "../auth";
+import { useUserStoreHook } from "@/store/modules/user";
+
+/** 配置请求选项 */
+const defaultConfig: AxiosRequestConfig = {
+	// 请求超时时间
+	timeout: 10000,
+	headers: {
+		Accept: "application/json, text/plain, */*",
+		"Content-Type": "application/json",
+		"X-Requested-With": "XMLHttpRequest",
+	},
+};
+
+/** 封装对 HTTP 请求的处理 */
+class Http {
+	constructor() {
+		this.httpInterceptorsRequest();
+		this.httpInterceptorsResponse();
+	}
+
+	/** 保存当前 Axios 实例对象 */
+	private static axiosInstance: AxiosInstance = Axios.create(defaultConfig);
+
+	/** 初始化配置对象 */
+	private static initConfig: HttpRequestConfig = {};
+
+	/** 防止重复刷新 token */
+	private static isRefreshing = false;
+
+	/** token 过期后，暂存待执行的请求 */
+	private static requests = [];
+
+	/** 重连原始请求
+	 * @description 遇到需要认证的错误（比如token过期），会将当前请求存入一个请求队列中，
+	 * 并返回一个Promise对象，该Promise对象会在后续获取到新的有效token后被resolve，
+	 * 并将新的token添加到请求的headers中，然后重新发起请求
+	 */
+	private static retryOriginalRequest(config: HttpRequestConfig) {
+		return new Promise((resolve) => {
+			// @ts-ignore
+			Http.requests.push((token: string) => {
+				// @ts-ignore
+				config.headers["Authorization"] = "Bearer " + token;
+				resolve(config);
+			});
+		});
+	}
+
+	/** 请求拦截 */
+	private httpInterceptorsRequest(): void {
+		Http.axiosInstance.interceptors.request.use(
+			async (config: HttpRequestConfig): Promise<any> => {
+				// 开启进度条动画
+				NProgress.start();
+
+				// 优先判断post/get等方法是否传入回调，否则执行初始化设置等回调
+				if (typeof config.beforeRequestCallback === "function") {
+					config.beforeRequestCallback(config);
+					return config;
+				}
+				if (Http.initConfig.beforeRequestCallback) {
+					Http.initConfig.beforeRequestCallback(config);
+					return config;
+				}
+
+				/** 请求白名单，放置一些不需要token的接口（通过设置请求白名单，防止token过期后再请求造成的死循环问题） */
+				const whiteList = ["/refreshToken", "/login"];
+				// 判断请求的url是否在白名单中
+				return whiteList.find((url) => url === config.url)
+					? config // 在 - 直接返回配置对象
+					: new Promise((resolve) => {
+							// 不在
+							// 获取 token
+							const data = getToken();
+							if (data) {
+								// 判断是否过期
+								const now = new Date().getTime();
+								const expired = data.expires - now <= 0;
+								if (expired) {
+									if (!Http.isRefreshing) {
+										Http.isRefreshing = true;
+										// token 过期刷新 refreshToken
+										useUserStoreHook()
+											.handRefreshToken({ refreshToken: data.refreshToken })
+											.then((res) => {
+												const token = res.data.accessToken;
+												// 重新设置请求头的 Authorization 字段
+												// @ts-ignore
+												config.headers["Authorization"] = formatToken(token);
+												// @ts-ignore
+												Http.requests.forEach((cb) => cb(token));
+												Http.requests = [];
+											})
+											.finally(() => {
+												Http.isRefreshing = false;
+											});
+									}
+									// 执行之前暂存的待执行请求
+									resolve(Http.retryOriginalRequest(config));
+								} else {
+									// @ts-ignore
+									config.headers["Authorization"] = formatToken(
+										data.accessToken,
+									);
+									resolve(config);
+								}
+							} else {
+								resolve(config);
+							}
+					  });
+			},
+			(error) => {
+				return Promise.reject(error);
+			},
+		);
+	}
+
+	/** 响应拦截 */
+	private httpInterceptorsResponse(): void {
+		Http.axiosInstance.interceptors.response.use(
+			(response: HttpResponse) => {
+				const $config = response.config;
+
+				// 关闭进度条动画
+				NProgress.done();
+
+				// 优先判断post/get等方法是否传入回调，否则执行初始化设置等回调
+				if (typeof $config.beforeResponseCallback === "function") {
+					$config.beforeResponseCallback(response);
+					return response.data;
+				}
+				if (Http.initConfig.beforeResponseCallback) {
+					Http.initConfig.beforeResponseCallback(response);
+					return response.data;
+				}
+
+				return response.data;
+			},
+			(error: HttpError) => {
+				const $error = error;
+				$error.isCancelRequest = Axios.isCancel($error);
+
+				// 关闭进度条动画
+				NProgress.done();
+
+				// 所有的响应异常 区分来源为取消请求/非取消请求
+				return Promise.reject($error);
+			},
+		);
+	}
+
+	/** 通用请求工具函数 */
+	public request<T>(
+		method: RequestMethods,
+		url: string,
+		param?: AxiosRequestConfig,
+		axiosConfig?: HttpRequestConfig,
+	): Promise<T> {
+		const config = {
+			method,
+			url,
+			...param,
+			...axiosConfig,
+		} as HttpRequestConfig;
+
+		// 单独处理自定义请求/响应回调
+		return new Promise((resolve, reject) => {
+			Http.axiosInstance
+				.request(config)
+				.then((response: any) => {
+					resolve(response);
+				})
+				.catch((error) => {
+					reject(error);
+				});
+		});
+	}
+
+	/** 单独抽离的post工具函数 */
+	public post<T, P>(
+		url: string,
+		params?: AxiosRequestConfig<T>,
+		config?: HttpRequestConfig,
+	): Promise<P> {
+		return this.request<P>("post", url, params, config);
+	}
+
+	/** 单独抽离的get工具函数 */
+	public get<T, P>(
+		url: string,
+		params?: AxiosRequestConfig<T>,
+		config?: HttpRequestConfig,
+	): Promise<P> {
+		return this.request<P>("get", url, params, config);
+	}
+}
+
+export const http = new Http();
+```
+
+
 

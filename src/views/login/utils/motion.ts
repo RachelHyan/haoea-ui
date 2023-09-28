@@ -18,7 +18,8 @@ export default defineComponent({
 				"div",
 				{},
 				{
-					default: () => (this.$slots.default ? [this.$slots.default()] : []),
+					// @ts-ignore
+					default: () => [this.$slots.default()],
 				},
 			),
 			[

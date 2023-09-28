@@ -6,7 +6,9 @@ import type {
 	HttpRequestConfig,
 	HttpResponse,
 	RequestMethods,
-} from "./types";
+} from "./types.d";
+import { getToken, formatToken } from "../auth";
+import { useUserStoreHook } from "@/store/modules/user";
 
 /** 配置请求选项 */
 const defaultConfig: AxiosRequestConfig = {
@@ -72,30 +74,44 @@ class Http {
 				}
 
 				/** 请求白名单，放置一些不需要token的接口（通过设置请求白名单，防止token过期后再请求造成的死循环问题） */
-				const whiteList = [];
+				const whiteList = ["/refreshToken", "/login"];
 				// 判断请求的url是否在白名单中
 				return whiteList.find((url) => url === config.url)
 					? config // 在 - 直接返回配置对象
 					: new Promise((resolve) => {
 							// 不在
 							// 获取 token
-							const data = "your_token";
+							const data = getToken();
 							if (data) {
 								// 判断是否过期
 								const now = new Date().getTime();
-								const expired = parseInt("data.expired") - now <= 0;
+								const expired = data.expires - now <= 0;
 								if (expired) {
 									if (!Http.isRefreshing) {
 										Http.isRefreshing = true;
 										// token 过期刷新 refreshToken
-										// 重新设置请求头的 Authorization 字段
-										// 执行之前暂存的待执行请求
-										Http.isRefreshing = false;
+										useUserStoreHook()
+											.handRefreshToken({ refreshToken: data.refreshToken })
+											.then((res) => {
+												const token = res.data.accessToken;
+												// 重新设置请求头的 Authorization 字段
+												// @ts-ignore
+												config.headers["Authorization"] = formatToken(token);
+												// @ts-ignore
+												Http.requests.forEach((cb) => cb(token));
+												Http.requests = [];
+											})
+											.finally(() => {
+												Http.isRefreshing = false;
+											});
 									}
+									// 执行之前暂存的待执行请求
 									resolve(Http.retryOriginalRequest(config));
 								} else {
 									// @ts-ignore
-									config.headers["Authorization"] = "data.accessToken";
+									config.headers["Authorization"] = formatToken(
+										data.accessToken,
+									);
 									resolve(config);
 								}
 							} else {

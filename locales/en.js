@@ -13,4 +13,14 @@ export default {
 	"密码格式应为8-18位数字、字母、符号的任意两种组合":
 		"The password format should be any combination of 8-18 digits",
 	请输入正确的验证码: "Please enter correct verify code",
+	记住密码: "Remember Password",
+	"忘记密码?": "Forget Password?",
+	手机登录: "Phone Login",
+	二维码登录: "QRCode Login",
+	注册: "Register",
+	第三方登录: "Third Login",
+	微信登录: "WeChat Login",
+	支付宝登录: "Alipay Login",
+	QQ登录: "QQ Login",
+	微博登录: "Weibo Login",
 };

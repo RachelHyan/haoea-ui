@@ -3,3 +3,19 @@
 	justify-content: center;
 	align-items: center;
 }
+
+.flex-b {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.flex-e {
+	display: flex;
+	justify-content: space-evenly;
+	align-items: center;
+}
+
+.w-full {
+	width: 100%;
+}
